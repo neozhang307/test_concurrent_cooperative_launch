@@ -25,7 +25,12 @@ __global__ void test1()
   printf("finish1\n");
 }
 
-
+/*
+compile:
+  nvcc -arch sm_80 -rdc=true cooperative_test.cu
+  nvcc -arch sm_80 -rdc=true -DTYPE1 cooperative_test.cu
+if the cmd recurrently print "execute0" and "execute1". it means both kernels are concurrently running. 
+*/
 int main(int argc, char const *argv[])
 {
   /* code */
@@ -34,13 +39,14 @@ int main(int argc, char const *argv[])
   cudaStream_t stream1;
   cudaStreamCreate( &stream1 ); 
 // 2 cooperative
-#ifdef TYPE0
+#ifndef TYPE1
   cudaLaunchCooperativeKernel((void*)test0, 1, 1, NULL, 0,stream0);//<-Persistent Kernel Relies on it
   cudaLaunchCooperativeKernel((void*)test1, 1, 1, NULL, 0,stream1);//<-Persistent Kernel Relies on it
-#endif
+#else
 //cooperative & traditinal
   cudaLaunchCooperativeKernel((void*)test0, 1, 1, NULL, 0,stream0);//<-Persistent Kernel Relies on it
   test1<<<1,1,0,stream1>>>();
+#endif
   cudaDeviceSynchronize();
   cudaStreamDestroy(stream0);
   cudaStreamDestroy(stream1);
